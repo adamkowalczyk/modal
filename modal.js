@@ -41,42 +41,47 @@ function populateThumbnails() {
 
 // need to make this function in context of forward/back gallery clicks
 function swapContent(link) {
+	
 	var modal = document.getElementById('modal');
-
+	// alert(link);
+	// alert(modal);
 	// check if link is to modal content e.g. gallery
 	if (link.match(/gallery/) ) {
+		// alert('gallery class matched');
 		// check if modal element needs adding
 		if (!modal) {
-			console.log('Modal NOT in place. Populate.');
-			var modalDiv = document.createElement('div');
-			modalDiv.id = 'modal';
-			modalDiv.style.zIndex = '10';
-			modalDiv.style.width = '50%'; //make outer div 100% in final
-			modalDiv.style.height = '50%';
-			document.body.appendChild(modalDiv);
+			// alert('Modal not found');
+			console.log('Modal NOT in place. Add, then Populate.');
+			var modalOuter = document.createElement('div');
+			modalOuter.id = 'modalOuter';
+			var modalInner = document.createElement('div');
+			modalInner.id = 'modal';
+			document.body.appendChild(modalOuter);
+			modalOuter.appendChild(modalInner);
 			fetchContent(link);
 			populateThumbnails();
 			addAllClickHandlers();
 		}
 		else {
+			// alert('Modal found');
 			console.log('Modal already in place. Populate.');
 			fetchContent(link);
 			populateThumbnails();
 			addAllClickHandlers();
 		}
 	}
-
-	// ??? Currently removeModal fires but no alert in !modal
-
 	// else, link is to ordinary page
 	else {
+		// alert('gallery class not matched');
 		// if modal, remove. Is this reliable? 
 		// Find a way to confirm that we have moved back to historyState just before first modal load
 		if (modal) {
-			alert('Remove modal fired');
+			// alert('Remove modal fired');
 			console.log('Removing modal');
-			modal.parentNode.removeChild(modal);
+			var modalToDelete = document.getElementById('modalOuter');
+			modalToDelete.parentNode.removeChild(modalToDelete);
 		}
+		// NB This should never be called, as popstate event only triggered where history state has been manually altered
 		// else we must be navigating between normal pages (which may still contain this script!)
 		// so, load as normal
 		else {
@@ -101,6 +106,7 @@ window.addEventListener('popstate', function(e) {
 // need to use a NAMED FUNCTION when adding event listeners
 // otherwise, you can add multiples of the same func. JS looks for func name to check for dupes.
 function linkGrabber(event) {
+	// alert(event.target.href);
 	swapContent(event.target.href);
 	history.pushState(null, null, event.target.href);
 	event.preventDefault();
@@ -117,8 +123,7 @@ function addAllClickHandlers() {
 	});
 }
 
-// equivalent to $(document).ready
-// click handlers set when page loads
+// equivalent to $(document).ready, click handlers set when page loads
 document.addEventListener('DOMContentLoaded', function() {
 	addAllClickHandlers();
 });

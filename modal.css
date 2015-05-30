@@ -1,0 +1,29 @@
+#modalOuter {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 1000;
+	background-color: rgba(230,230,230,0.9);
+	overflow: hidden;
+	outline: none;
+}
+
+#modal {
+	/*position: relative;*/
+	display: block;
+	width: 50%;
+	margin-top: 30px;
+	margin-bottom: 30px;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+#modal > img {
+	display: block;
+	margin-right: auto;
+	margin-left: auto;
+	width: 95%;
+}
+
