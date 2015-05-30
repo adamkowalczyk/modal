@@ -1,0 +1,18 @@
+27/05/15 	1hr 20mins
+28/05/15	40 mins  
+29/05/15	2hr 25mins
+
+
+
+---Plan---
+
+Flow:
+1. Click handle link/button/image
+2. XMLHttpRequest
+3. append modal (nearly fullscreen, high z-index), set inner html to xhr response
+4. alter hisoryState
+5. back button returns to prev page (how?) or close butoon
+
+consider making modal fullsreen, outer area is low opacity div, with click handler on outer to close
+
+
