@@ -10,8 +10,8 @@
 	outline: none;
 }
 
-#modal {
-	/*position: relative;*/
+#modalInner {
+	background-color: white;
 	display: block;
 	width: 50%;
 	margin-top: 30px;
@@ -20,7 +20,7 @@
 	margin-left: auto;
 }
 
-#modal > img {
+#modalInner > img, #modalInner > div {
 	display: block;
 	margin-right: auto;
 	margin-left: auto;

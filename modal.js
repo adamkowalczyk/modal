@@ -1,16 +1,11 @@
-// TODO add feature detecetion http://diveintohtml5.info/detect.html#history
-// TODO add IE6 fallback http://stackoverflow.com/questions/8567114/how-to-make-an-ajax-call-without-jquery
+// use state object to allow same handler for clicks and popstate events
+// NB state is for CURRENT page
 
-// TODO add global vars/config object to set regex keyword, no. images to display. anything else? toggle 'gallery' function?
-
-// TODO. if using as gallery, rather than requesting an html file, what about getting the img src and rendering directly?
-
-// TODO? add transition effect?
 
 function fetchContent(link) {
 	var xhr = new XMLHttpRequest();
 	// NB using async xhr (sync is deprecated) with up-to-date event triggers
-	var modal = document.getElementById('modal');
+	var modal = document.getElementById('modalInner');
 
 	// add event listeners before calling #open. alerts on fail for development
 	xhr.addEventListener('error', function(){ alert('xhr error'); });
@@ -18,104 +13,114 @@ function fetchContent(link) {
 	xhr.addEventListener('load', function(){
 		console.log(xhr.responseText);
 		modal.innerHTML = xhr.responseText;
+		addAllClickHandlers();
 	});
 
 	xhr.open('GET', link);
 	xhr.send();
 }
 
-
-
-// function for gallery use - finds eligble img links on main page
-// adds thumbnails to bottom of modal
-// assumes
-function populateThumbnails() {
-	// get eligible thumbnail links. by class?  src/href regex
-	// pare down to max display num. 5? Alphabetical sort? page order sort?
-	// if over 5, add/enable scroll buttons
-	// add img srcs to thumbnail elements
-	
-	// for now:
-	return false;
+function renderModal() {
+	var modalOuter = document.createElement('div');
+	modalOuter.id = 'modalOuter';
+	var modalInner = document.createElement('div');
+	modalInner.id = 'modalInner';
+	document.body.appendChild(modalOuter);
+	modalOuter.appendChild(modalInner);
 }
 
-// need to make this function in context of forward/back gallery clicks
-function swapContent(link) {
-	
-	var modal = document.getElementById('modal');
-	// alert(link);
-	// alert(modal);
-	// check if link is to modal content e.g. gallery
-	if (link.match(/gallery/) ) {
-		// alert('gallery class matched');
-		// check if modal element needs adding
-		if (!modal) {
-			// alert('Modal not found');
-			console.log('Modal NOT in place. Add, then Populate.');
-			var modalOuter = document.createElement('div');
-			modalOuter.id = 'modalOuter';
-			var modalInner = document.createElement('div');
-			modalInner.id = 'modal';
-			document.body.appendChild(modalOuter);
-			modalOuter.appendChild(modalInner);
-			fetchContent(link);
-			populateThumbnails();
-			addAllClickHandlers();
+function loadModal(state) {
+	var extantModal = document.getElementById('modalOuter');
+
+	// TODO account for multiple classes, indexOf
+	if (state.class === 'modal-link') {
+		// does link contain img tag as first child?
+		if (state.firstChild.nodeName === 'IMG') {
+			// use img src to populate modal
+			if (!extantModal) {
+				// add modal to DOM
+				renderModal();  // <- render a different modal for gallery? Or use 2nd func to add gal elems
+				// CREATE + APPEND IMG ELEM
+				// SET IMG SRC state.firstChild.src
+				addAllClickHandlers();
+			}
+			else {
+				// populate modal
+			}
 		}
 		else {
-			// alert('Modal found');
-			console.log('Modal already in place. Populate.');
-			fetchContent(link);
-			populateThumbnails();
-			addAllClickHandlers();
+			// use href to populate modal with html fragment
+			if (!extantModal) {
+				// add modal to DOM
+				renderModal(); 
+				// populate modal
+				fetchContent(state.href);
+			}
+			else {
+				// populate modal
+				fetchContent(state.href);
+			}
 		}
 	}
-	// else, link is to ordinary page
+	// if !state.class, click back to original page
 	else {
-		// alert('gallery class not matched');
-		// if modal, remove. Is this reliable? 
-		// Find a way to confirm that we have moved back to historyState just before first modal load
-		if (modal) {
-			// alert('Remove modal fired');
+		if (extantModal) {
 			console.log('Removing modal');
-			var modalToDelete = document.getElementById('modalOuter');
-			modalToDelete.parentNode.removeChild(modalToDelete);
+			extantModal.parentNode.removeChild(extantModal);
 		}
-		// NB This should never be called, as popstate event only triggered where history state has been manually altered
-		// else we must be navigating between normal pages (which may still contain this script!)
+		//? This should never be called, as popstate event only triggered where history state has been manually altered
+		// else we must be navigating between normal page links
 		// so, load as normal
 		else {
-			alert('Normal page else fired');
+			alert('Normal page else fired - this never happens!!!!');
 			console.log('Load page normally');
 			window.location = window.location.href;
 		}
 	}
 }
 
-// NB!! popstate only fires if history has been manually manipluated
 
-// popstate fires on back button press (and, forwward?)
-// when event fires, address bar location has already changed 
-window.addEventListener('popstate', function(e) {
+////////////
+// Popstate listener
+////////////
+
+window.addEventListener('popstate', function(event) {
 	console.log('POP!');
-	console.log(e);
-	swapContent(window.location.href);
+	console.log(event);
+	if (window.history.state) {
+		loadModal(window.history.state);
+	}
+	else {
+		var fakeState = {class: null, firstChild: null, href: window.location.href};
+		loadModal(fakeState);
+	}
+	
 });
 
+/////////////////
+// Click Handlers
+//////////////////
 
-// need to use a NAMED FUNCTION when adding event listeners
-// otherwise, you can add multiples of the same func. JS looks for func name to check for dupes.
 function linkGrabber(event) {
-	// alert(event.target.href);
-	swapContent(event.target.href);
-	history.pushState(null, null, event.target.href);
+	// NB don't try and put a node object in state, it breaks.
+	var stateObject = {
+					firstChild:  {
+									nodeName: event.target.firstChild.nodeName, 
+									src: event.target.firstChild.src
+								},
+					class: event.target.className,
+					href: event.target.href
+				};
+	console.log(stateObject);
+	loadModal(stateObject);
+	history.pushState(stateObject, null, event.target.href);
 	event.preventDefault();
 }
 
 
 function addAllClickHandlers() {
 	console.log('Click handlers set');
-	var linkList = document.querySelectorAll('a.gallery'); //NB return node list, not an array
+	var linkList = document.querySelectorAll('a.modal-link'); //NB return node list, not an array
 	var linkArray = Array.prototype.slice.call(linkList); // now it's an array!
 	console.log(linkArray);
 	linkArray.forEach(function(linkElement){
@@ -127,11 +132,3 @@ function addAllClickHandlers() {
 document.addEventListener('DOMContentLoaded', function() {
 	addAllClickHandlers();
 });
-
-// <IE8 fallback
-// document.attachEvent("onreadystatechange", function(){
-//   if (document.readyState === "complete"){
-//     document.detachEvent( "onreadystatechange", arguments.callee );
-//     // code ...
-//   }
-// });
