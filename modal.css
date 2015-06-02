@@ -5,7 +5,7 @@
 	bottom: 0;
 	left: 0;
 	z-index: 1000;
-	background-color: rgba(230,230,230,0.9);
+	background-color: rgba(250,250,250,0.8);
 	overflow: hidden;
 	outline: none;
 }
@@ -15,9 +15,19 @@
 	display: block;
 	width: 50%;
 	margin-top: 30px;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+#modalFooter {
+	background-color: white;
+	display: block;
+	width: 50%;
+	padding-top: 30px;
 	margin-bottom: 30px;
 	margin-right: auto;
 	margin-left: auto;
+	text-align: center;
 }
 
 #modalInner > img, #modalInner > div {
@@ -25,5 +35,12 @@
 	margin-right: auto;
 	margin-left: auto;
 	width: 95%;
+}
+
+#exitButton {
+	display: block;
+	margin-right: auto;
+	margin-left: auto;
+	width: 60px;
 }
 

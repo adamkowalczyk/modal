@@ -22,12 +22,12 @@ function fetchContent(link) {
 
 	// add event listeners before calling #open. alerts on fail for development
 	// TODO on fail, remove modal. Better, keep modal hidden until content loaded
-	xhr.addEventListener('error', function(){ alert('xhr error'); });
-	xhr.addEventListener('abort', function(){ alert('xhr abort'); });
+	xhr.addEventListener('error', function(){ console.log(xhr.response); alert('xhr error'); });
+	xhr.addEventListener('abort', function(){ console.log(xhr.response); alert('xhr abort'); });
 	xhr.addEventListener('load', function(){
 		console.log(xhr.responseText);
 		modal.innerHTML = xhr.responseText;
-		// update click handlers to allow modals to link to each other.
+		// update click handlers, to allow modals to link to each other.
 		addAllClickHandlers();
 	});
 	// trigger xhr
@@ -43,8 +43,17 @@ function renderModal() {
 		modalOuter.id = 'modalOuter';
 		var modalInner = document.createElement('div');
 		modalInner.id = 'modalInner';
+		var modalFooter = document.createElement('div');
+		modalFooter.id = 'modalFooter';
+		var exitButton = document.createElement('button');
+		exitButton.id = 'exitButton';
+		var t = document.createTextNode('Close');
+		exitButton.appendChild(t);
+
 		document.body.appendChild(modalOuter);
 		modalOuter.appendChild(modalInner);
+		modalOuter.appendChild(modalFooter);
+		modalFooter.appendChild(exitButton);
 	}
 	else {
 		return false;
@@ -118,7 +127,14 @@ window.addEventListener('popstate', function(event) {
 		loadModal(window.history.state);
 	}
 	else {
-		var fakeState = {class: null, firstChild: null, href: window.location.href};
+		// pass simulated state object to loadModal()
+		var fakeState = {
+				tagName: null,
+				class: null,
+				href: window.location.href,
+				src: null,
+				originalURL: null
+			};
 		loadModal(fakeState);
 	}
 	
@@ -133,8 +149,8 @@ window.addEventListener('popstate', function(event) {
 function linkGrabber(event) {
 	// NB don't try and put a node object in state, it breaks.
 	
-	// className/href - accouting for possibility of target being link, or image -> checking parentNode
 	var className;
+	// check for modal-link class related to event. event.target may be <img>, so check parent <a>
 	if (event.target.className.indexOf('modal-link') !== -1) {
 		className = 'modal-link';
 	}
@@ -143,6 +159,7 @@ function linkGrabber(event) {
 	}
 	
 	var href;
+	// record href related to event. event.target may be <img>, so check parent <a>
 	if (event.target.href) {
 		href = event.target.href;
 	}
@@ -150,28 +167,65 @@ function linkGrabber(event) {
 		href = event.target.parentNode.href;
 	}
 
+	// TODO check for edge cases where state exists on first page. moving back to it seems okay.
+	var originalURL;
+	// record current url when first opening modal. 
+	// propagate if opening subsequent modals. On modal close, load originalURL
+	if (!window.history.state) {
+		originalURL = window.location.href;
+	}
+	else if (window.history.state.originalURL) {
+		originalURL = window.history.state.originalURL;
+	}
+
 	var stateObject = {
 					tagName: event.target.tagName,
 					class: className,
 					href: href,
-					src: event.target.src
+					src: event.target.src,
+					originalURL: originalURL
 				};
 	
-	console.log(stateObject);
+	console.log('State Object: ', stateObject);
 	loadModal(stateObject);
 	history.pushState(stateObject, null, href);
 	event.preventDefault();
 }
 
+function closeModal(event) {
+	// check event.target to prevent child clicks triggering event
+	if (event.target.id === 'modalOuter' || event.target.id === 'exitButton') {
+		// full reload, probably don't use..
+		// window.location = window.history.state.originalURL;
+		// history.pushState(null, null, history.state.originalURL);
+		var extantModal = document.getElementById('modalOuter');
+		if (extantModal) {
+			history.pushState(null, null, history.state.originalURL);
+			console.log('Removing modal');
+			extantModal.parentNode.removeChild(extantModal);
+		}
+	}
+}
 
 function addAllClickHandlers() {
 	console.log('Click handlers set');
+	// set modal-link handlers
 	var linkList = document.querySelectorAll('a.modal-link'); //NB return node list, not an array
 	var linkArray = Array.prototype.slice.call(linkList); // now it's an array!
 	console.log(linkArray);
 	linkArray.forEach(function(linkElement){
 		linkElement.addEventListener('click', linkGrabber);
 	});
+	// set modalOuter handler
+	var modalOuter = document.getElementById('modalOuter');
+	if (modalOuter) {
+		modalOuter.addEventListener('click', closeModal);
+	}
+	// set exitButton handler
+	var exitButton = document.getElementById('exitButton');
+	if (exitButton) {
+		exitButton.addEventListener('click', closeModal);
+	}
 }
 
 // equivalent to $(document).ready, click handlers set when page loads
