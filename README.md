@@ -25,7 +25,7 @@ If tags are omitted, the resource in window.location is loaded as normal - this 
 ### Run demo
 
 1. Clone this repo.
-2. `npm install -g http-server' (or similar simple server)
+2. `npm install -g http-server` (or similar simple server)
 3. `http-server`
 4. Open browser!
 
