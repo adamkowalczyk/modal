@@ -3,18 +3,19 @@
 
 // 1) set class of link to 'modal-link' (mulitple classes okay)
 // 2) if link contains an img - img will load in modal. <img> should be only child of <a>
-// 3) in this case, links href is arbitrary, will be displayed in browser bar
+// 3) in this case, the links href should link to file containing the modal js and css html links
 // 4) if link contains anything else, e.g. text, actual href will be fetched and loaded in modal
-// 5) in this case, links href MUST point to resource
+// 5) in this case, links href MUST point to resource. HTML fragment should include tags linking to modal js and css at top
 
-// img link functionailty is for gallery style thumbnail pop-up use case.
+// img link functionality is for gallery style thumbnail pop-up use case.
+// TODO add gallery thumbnail colletion and display in modal
 
-// TODO close modal click handlers on outer-click/close click
-// ??? How to track orignal page - e.g. when mulitple modals used?
-// 1) check for modal on clickEvent/check state object ( window.history.state)
-// 2) add a special prop to stateObj 'originalHref',propage, reload on close etc.
+// NB You must include tags linking to the modal js and css files in each HTML fragment / resource linked to by an img link
+// This is clunky, but currently the only way to prevent broken behaviour on browser refresh/re-open
+// If tags are omitted, the resource in window.location is loaded as normal - this is bad.
 
 
+// fetch html fragment to load in modal
 function fetchContent(link) {
 	var xhr = new XMLHttpRequest();
 	// NB using async xhr (sync is deprecated) with up-to-date event triggers
@@ -35,6 +36,7 @@ function fetchContent(link) {
 	xhr.send();
 }
 
+// add modal elements to page
 function renderModal() {
 	var extantModal = document.getElementById('modalOuter');
 
@@ -61,6 +63,7 @@ function renderModal() {
 	
 }
 
+// add img element to modal
 function renderModalImg(src) {
 	var extantImgae = document.getElementById('modaImage');
 
@@ -76,6 +79,7 @@ function renderModalImg(src) {
 	}
 }
 
+// interpret state object, load modal as appropriate
 function loadModal(state) {
 	// checking state object, as works for back/forward as well as link click
 	if (state.class === 'modal-link') {
@@ -98,7 +102,7 @@ function loadModal(state) {
 			// NB click handlers set in fetchContent()
 		}
 	}
-	// if !state.class, click back to original page
+	// if !state.class, it's a click/popstate back to original page
 	else {
 		var extantModal = document.getElementById('modalOuter');
 		if (extantModal) {
@@ -144,7 +148,7 @@ window.addEventListener('popstate', function(event) {
 // Click Handlers
 //////////////////
 
-// !!! On img click, event.target is IMAGE, bubbles up to <a>
+// !!! On <a><img> click, event.target is IMAGE, bubbles up to <a>
 
 function linkGrabber(event) {
 	// NB don't try and put a node object in state, it breaks.
@@ -195,9 +199,6 @@ function linkGrabber(event) {
 function closeModal(event) {
 	// check event.target to prevent child clicks triggering event
 	if (event.target.id === 'modalOuter' || event.target.id === 'exitButton') {
-		// full reload, probably don't use..
-		// window.location = window.history.state.originalURL;
-		// history.pushState(null, null, history.state.originalURL);
 		var extantModal = document.getElementById('modalOuter');
 		if (extantModal) {
 			history.pushState(null, null, history.state.originalURL);
@@ -229,6 +230,31 @@ function addAllClickHandlers() {
 }
 
 // equivalent to $(document).ready, click handlers set when page loads
-document.addEventListener('DOMContentLoaded', function() {
-	addAllClickHandlers();
-});
+document.addEventListener('DOMContentLoaded', addAllClickHandlers); 
+
+///////////////////
+// REFRESH FALLBACK
+//////////////////
+
+// fallback for window refresh/browser restart - no popstate event.
+function checkHistoryStateBeforeDOMLoaded() {
+	console.log(window.history.state);
+	if (window.history.state && window.location.href !== window.history.state.originalURL) {
+		window.location = window.history.state.originalURL;
+	}
+	
+}
+// called when parsed to prevent DOM loading before execution. 
+checkHistoryStateBeforeDOMLoaded();
+
+
+function checkHistoryState() {
+	var extantModal = document.getElementById('modalOuter');
+	if (window.history.state && window.history.state.class && !extantModal) {
+		loadModal(window.history.state);
+		// replaceState - otherwise you create a new history entry, which creates an extra, broken back button step.
+		history.replaceState(window.history.state, null, window.history.state.href);
+	}
+}
+
+document.addEventListener('DOMContentLoaded', checkHistoryState); 
